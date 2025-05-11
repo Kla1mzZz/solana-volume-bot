@@ -6,8 +6,14 @@ authors = [
     {name = "Kla1mzZz",email = "kla1mzz16@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11, <4.0"
 dependencies = [
+    "rich (>=14.0.0,<15.0.0)",
+    "ruff (>=0.11.9,<0.12.0)",
+    "sqlalchemy[asyncio] (>=2.0.40,<3.0.0)",
+    "aiosqlite (>=0.21.0,<0.22.0)",
+    "solders (>=0.26.0,<0.27.0)",
+    "solana (>=0.36.6,<0.37.0)"
 ]
 
 [tool.poetry]
@@ -17,3 +23,13 @@ packages = [{include = "solana_bot", from = "src"}]
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["Q"]
+ignore = ["Q001"]
+
+[tool.ruff.format]
+quote-style = "single"

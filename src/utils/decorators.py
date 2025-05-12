@@ -7,7 +7,6 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.console import Console
 from rich.live import Live
 from rich.spinner import Spinner
-from functools import wraps
 import time
 
 console = Console()

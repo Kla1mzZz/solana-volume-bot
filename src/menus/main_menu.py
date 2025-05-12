@@ -40,7 +40,7 @@ class MainMenu(BaseMenu):
         wallet_menu.display()
         pass
 
-    @show_message('Отправка транзакции...', border_color='magenta', justify='left')
+    @show_message('Отправка транзакции...', border_color='magenta')
     def handle_send_transaction(self):
         time.sleep(5)
 

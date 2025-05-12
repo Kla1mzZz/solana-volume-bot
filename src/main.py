@@ -1,5 +1,4 @@
-from menus.main_menu import MainMenu, MainMenuChoice
-# from menus.wallet_menu import wallet_menu, WalletMenuChoice
+from menus.main_menu import MainMenu
 
 
 def main():

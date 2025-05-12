@@ -26,7 +26,7 @@ def show_message(
                     border_style=border_color,
                     padding=(1, 4),
                 ),
-                justify=justify,
+                justify=justify, # type: ignore
             )
 
             time.sleep(1.5)

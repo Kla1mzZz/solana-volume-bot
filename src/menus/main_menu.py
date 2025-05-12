@@ -9,13 +9,14 @@ from rich.prompt import Prompt
 
 from menus.base_menu import BaseMenu
 from menus.wallet_menu import WalletMenu
+from menus.trading_menu import TradingMenu
 from utils.styles import console
 from utils.decorators import show_message
 
 
 class MainMenuChoice(Enum):
     CREATE_WALLET = '1'
-    SEND_TRANSACTION = '2'
+    TRADING = '2'
 
 
 class MainMenu(BaseMenu):
@@ -26,24 +27,17 @@ class MainMenu(BaseMenu):
     def setup_choices(self):
         self.add_choice(
             MainMenuChoice.CREATE_WALLET.value,
-            'Создать кошелек',
+            'Кошельки',
             self.handle_create_wallet,
         )
-        self.add_choice(
-            MainMenuChoice.SEND_TRANSACTION.value,
-            'Отправить транзакцию',
-            self.handle_send_transaction,
-        )
+        self.add_choice(MainMenuChoice.TRADING.value, 'Накрутка', self.handle_trading)
 
     def handle_create_wallet(self):
         wallet_menu = WalletMenu()
         wallet_menu.display()
-        pass
+        return True
 
-    @show_message('Отправка транзакции...', border_color='magenta')
-    def handle_send_transaction(self):
-        time.sleep(5)
-
-    @show_message('Выход...')
-    def handle_exit(self):
+    def handle_trading(self):
+        trading_menu = TradingMenu()
+        trading_menu.display()
         return True

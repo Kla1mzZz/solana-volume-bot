@@ -9,9 +9,7 @@ class DatabaseManager:
         self,
         url: str,
     ):
-        self.engine = create_async_engine(
-            url=url
-        )
+        self.engine = create_async_engine(url=url)
         self.session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
             bind=self.engine,
             autoflush=False,

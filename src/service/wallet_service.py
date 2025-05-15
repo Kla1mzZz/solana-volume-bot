@@ -1,52 +1,36 @@
+import re
 from solders.message import Message
 from solders.keypair import Keypair
 from solders.hash import Hash
 from solders.transaction import Transaction
 from solders.pubkey import Pubkey
 from solders.system_program import transfer, TransferParams
+import base58
 
-import json
 
-def create_wallet():
-    keypair = Keypair()
-    pubkey = keypair.pubkey()
-    secret = keypair.to_bytes()  # 64-byte seed
-    return keypair, pubkey, secret
 
-def save_wallet_to_file(keypair: Keypair, filename="wallet.json"):
-    secret = list(keypair.to_bytes())  # Convert bytes to list of ints
-    with open(filename, "w") as f:
-        json.dump(secret, f)
+import sys
+from pathlib import Path
+
+import asyncio
+
+# Add parent directory to Python path to find database module
+# sys.path.append(str(Path(__file__).parent.parent))
+
+from database import add_wallets_to_db
+
+
+async def create_wallet(count: int = 1) -> list[tuple[str, str]]:
+    wallets = []
+    for i in range(count):
+        keypair = Keypair()
+        pubkey = keypair.pubkey()
+        secretkey = keypair.to_bytes()
+        wallet = (str(pubkey), base58.b58encode(secretkey).decode())
+        wallets.append(wallet)
         
-def load_wallet_from_file(filename="wallet.json") -> Keypair:
-    with open(filename, "r") as f:
-        secret = json.load(f)
-    return Keypair.from_bytes(bytes(secret))
-
-# Create and save a wallet
-kp, pubkey, secret = create_wallet()
-print("Public Key:", pubkey)
-save_wallet_to_file(kp)
-
-# Load the wallet again
-loaded_kp = load_wallet_from_file()
-print("Loaded Public Key:", loaded_kp.pubkey())
+    # await add_wallets_to_db(wallets)
+    return wallets
 
 
-
-# def create_transfer_transaction(from_kp: Keypair, to_pubkey: Pubkey, lamports: int) -> Transaction:
-#     ix = transfer(TransferParams(
-#         from_pubkey=from_kp.pubkey(),
-#         to_pubkey=to_pubkey,
-#         lamports=lamports
-#     ))
-#     msg = Message([ix], from_kp.pubkey())
-#     blockhash = Hash.default()
-#     tx = Transaction([from_kp], msg, blockhash)
-#     return tx
-
-# Приклад
-# receiver = Pubkey.from_string("11111111111111111111111111111111")
-# tx = create_transfer_transaction(keypair, receiver, 1000000)
-# print("Transaction created:", tx)
 

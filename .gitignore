@@ -2,3 +2,5 @@
 .env
 .ruff_cache
 poetry.lock
+database.db
+alembic/versions

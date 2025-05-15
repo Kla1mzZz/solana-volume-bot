@@ -8,6 +8,8 @@ from rich.prompt import Prompt
 from menus.base_menu import BaseMenu
 from utils.decorators import show_message
 
+from service.wallet_service import create_wallet
+
 console = Console()
 
 
@@ -40,8 +42,9 @@ class WalletMenu(BaseMenu):
         self.add_choice(WalletMenuChoice.BACK.value, 'Назад', self.handle_back)
 
     @show_message('Создание нескольких кошельков..')
-    def handle_create_multiple(self):
+    async def handle_create_multiple(self):
         self.display()
+        wallets = create_wallet(10)
         return False
 
     def main_wallet(self):

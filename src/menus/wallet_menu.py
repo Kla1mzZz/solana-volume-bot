@@ -10,7 +10,7 @@ from rich.prompt import Prompt
 from menus.base_menu import BaseMenu
 from utils.decorators import show_message
 
-from service.wallet_service import create_wallet
+from service.wallet_service import create_wallet, money_distibution, get_balance, check_token_exists
 from database import get_main_wallet, add_wallets_to_db, get_wallets
 
 console = Console()
@@ -43,6 +43,9 @@ class WalletMenu(BaseMenu):
             'Распределить деньги',
             self.money_to_wallets,
         )
+        self.add_choice(
+            '7', 'asdasdasd', self.check
+        )
         self.add_choice(WalletMenuChoice.BACK.value, 'Назад', self.handle_back)
 
     async def handle_create_multiple(self):
@@ -66,6 +69,7 @@ class WalletMenu(BaseMenu):
         main_wallet = await get_main_wallet()
         console.print(f'Основной кошелек: [green]{main_wallet.address}[/]')
 
+    @show_message('Загрузка кошельков...')
     async def list_wallets(self):
         wallets = await get_wallets()
 
@@ -73,6 +77,7 @@ class WalletMenu(BaseMenu):
             Column('id', style='bold cyan'),
             Column('Адрес', style='bold yellow', overflow='fold'),
             Column('Приватный ключ', style='bold yellow', overflow='fold'),
+            Column('Баланс', style='bold yellow', overflow='fold'),
             box=box.ROUNDED,
             title='Список кошельков',
             title_style='bold yellow',
@@ -80,7 +85,8 @@ class WalletMenu(BaseMenu):
             
         )
         for wallet in wallets:
-            table.add_row(str(wallet.id), wallet.address, wallet.private_key)
+            balance = await get_balance(wallet.private_key)
+            table.add_row(str(wallet.id), wallet.address, wallet.private_key, str(balance))
 
         console.print(table)
 
@@ -88,9 +94,19 @@ class WalletMenu(BaseMenu):
         console.clear()
 
     async def money_to_wallets(self):
-        console.clear()
+        choice = Prompt.ask(
+            '[bold yellow]Введите сумму в SOL[/]',
+            show_choices=False,
+        )
+        
+        await money_distibution(float(choice))
+        
+        time.sleep(2)
         await self.display()
-        return False
+        console.clear()
+    
+    async def check(self):
+        await check_token_exists()
 
     def handle_back(self):
         return True

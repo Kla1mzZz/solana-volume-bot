@@ -77,7 +77,6 @@ class WalletMenu(BaseMenu):
             title='Список кошельков',
             title_style='bold yellow',
             border_style='magenta',
-            
         )
         for wallet in wallets:
             table.add_row(str(wallet.id), wallet.address, wallet.private_key)

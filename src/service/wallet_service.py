@@ -4,8 +4,18 @@ import asyncio
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solana.rpc.async_api import AsyncClient
-import asyncio
-import base58
+from solders.transaction import VersionedTransaction
+from solders.system_program import TransferParams, transfer
+from solders.message import MessageV0
+from solana.rpc.core import RPCException
+from spl.token.async_client import AsyncToken
+from spl.token.constants import TOKEN_PROGRAM_ID
+
+from database import get_wallets, get_main_wallet
+from utils.styles import console
+
+
+client = AsyncClient('https://api.devnet.solana.com')
 
 
 async def create_wallet(count: int = 1) -> list[tuple[str, str]]:

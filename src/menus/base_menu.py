@@ -34,7 +34,7 @@ class BaseMenu:
 
     async def init_wallet(self):
         wallets = await get_wallets()
-        
+
         if not wallets:
             wallet = await create_wallet()
             await add_wallets_to_db(wallet)
@@ -43,10 +43,10 @@ class BaseMenu:
             main_wallet = await get_main_wallet()
             self.wallet_address = main_wallet.address
             self.wallet_secret_key = main_wallet.private_key
-        
+
         self.wallet_address = main_wallet.address
         self.wallet_secret_key = main_wallet.private_key
-    
+
     def add_choice(self, num: str, choice: str, handler: Callable):
         """
         Добавляет пункт в меню.
@@ -66,7 +66,7 @@ class BaseMenu:
         Если выбран пункт '0', программа завершает выполнение.
         """
         await self.init_wallet()
-        
+
         console.print(
             Panel.fit(
                 '[bold italic yellow]Solana Volume Bot[/]',
@@ -75,18 +75,20 @@ class BaseMenu:
                 border_style='magenta',
             ),
         )
-        
+
         console.print(
             Panel.fit(
                 f'Адрес:[bold italic yellow] {self.wallet_address}[/]\n\nПриватный ключ: [bold italic yellow]{self.wallet_secret_key}[/]',
                 title='Основной кошелек',
                 border_style='magenta',
-                width=80
+                width=80,
             ),
             justify='center',
         )
 
-        menu_table = Table(show_header=False, box=box.ROUNDED, border_style='magenta', padding=(0, 3))
+        menu_table = Table(
+            show_header=False, box=box.ROUNDED, border_style='magenta', padding=(0, 3)
+        )
 
         for num, choice, _ in self.choices:
             menu_table.add_row(f'[bold cyan]{num}.[/]', f'[bold cyan]{choice}[/]')

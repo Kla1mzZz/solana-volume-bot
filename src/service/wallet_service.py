@@ -29,14 +29,16 @@ async def create_wallet(count: int = 1) -> list[tuple[str, str]]:
 
     return wallets
 
+
 async def get_balance(wallet_private_key: str):
     private_key = base58.b58decode(wallet_private_key)
-    
+
     keypair = Keypair.from_bytes(private_key)
-    
+
     balance = await client.get_balance(keypair.pubkey())
-    
+
     return balance.value
+
 
 async def money_distibution(amount: float):
     get_m_w = await get_main_wallet()
@@ -50,22 +52,22 @@ async def money_distibution(amount: float):
             TransferParams(
                 from_pubkey=main_wallet.pubkey(),
                 to_pubkey=wallet.pubkey(),
-                lamports=int(money_on_one_wallet * 1_000_000_000)
+                lamports=int(money_on_one_wallet * 1_000_000_000),
             )
         )
-        
+
         latest_blockhash = (await client.get_latest_blockhash()).value.blockhash
-        
+
         message = MessageV0.try_compile(
             payer=main_wallet.pubkey(),
             instructions=[transfer_instruction],
             address_lookup_table_accounts=[],
-            recent_blockhash=latest_blockhash
+            recent_blockhash=latest_blockhash,
         )
-        
+
         fee_response = await client.get_fee_for_message(message)
         transaction_fee = fee_response.value
-        
+
         if transaction_fee is None:
             print('Не удалось получить комиссию!')
             return None
@@ -74,12 +76,12 @@ async def money_distibution(amount: float):
         if amount_in_lamports <= 0:
             print('Недостаточно средств для отправки с учетом комиссии!')
             return None
-        
+
         transfer_instruction = transfer(
             TransferParams(
                 from_pubkey=main_wallet.pubkey(),
                 to_pubkey=wallet.pubkey(),
-                lamports=amount_in_lamports
+                lamports=amount_in_lamports,
             )
         )
 
@@ -87,24 +89,29 @@ async def money_distibution(amount: float):
             payer=main_wallet.pubkey(),
             instructions=[transfer_instruction],
             address_lookup_table_accounts=[],
-            recent_blockhash=latest_blockhash
+            recent_blockhash=latest_blockhash,
         )
 
         transaction = VersionedTransaction(message, [main_wallet])
 
         try:
             response = await client.send_transaction(transaction)
-            console.print(f'[bold green]Транзакция отправлена Hash: {response.value}[/]')
-            
+            console.print(
+                f'[bold green]Транзакция отправлена Hash: {response.value}[/]'
+            )
+
         except RPCException as e:
             print('Ошибка при отправке транзакции:', e)
             return None
+
 
 async def check_token_exists():
     k = Keypair()
     mint_address = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
     program_id = Pubkey(base58.b58decode('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'))
-    token = AsyncToken(client, Pubkey(base58.b58decode(mint_address)), TOKEN_PROGRAM_ID, k)
+    token = AsyncToken(
+        client, Pubkey(base58.b58decode(mint_address)), TOKEN_PROGRAM_ID, k
+    )
 
     n = token.get_mint_info()
     try:

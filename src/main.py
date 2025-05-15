@@ -1,15 +1,16 @@
+import asyncio
 from menus.main_menu import MainMenu
 
 
-def main():
+async def main():
     while True:
         menu = MainMenu()
 
         while True:
-            should_exit = menu.display()
+            should_exit = await menu.display()
             if should_exit:
                 break
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

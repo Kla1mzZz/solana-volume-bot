@@ -1,23 +1,8 @@
-import re
-from solders.message import Message
 from solders.keypair import Keypair
-from solders.hash import Hash
-from solders.transaction import Transaction
 from solders.pubkey import Pubkey
-from solders.system_program import transfer, TransferParams
-import base58
-
-
-
-import sys
-from pathlib import Path
-
+from solana.rpc.async_api import AsyncClient
 import asyncio
-
-# Add parent directory to Python path to find database module
-# sys.path.append(str(Path(__file__).parent.parent))
-
-from database import add_wallets_to_db
+import base58
 
 
 async def create_wallet(count: int = 1) -> list[tuple[str, str]]:
@@ -28,9 +13,18 @@ async def create_wallet(count: int = 1) -> list[tuple[str, str]]:
         secretkey = keypair.to_bytes()
         wallet = (str(pubkey), base58.b58encode(secretkey).decode())
         wallets.append(wallet)
-        
-    # await add_wallets_to_db(wallets)
+
     return wallets
 
+async def a():
+    client = AsyncClient('https://api.devnet.solana.com')
+    
+    c = base58.b58decode('4sBPJAhFVG67HDZo2Eju3KrciiK9c3GrLC2393bjHeBX29qAf7M18FqpARdd95DrB2rUCYn4nBzpnLNSVd17APQp')
+    
+    k = Keypair.from_bytes(c)
+    
+    b = await client.get_balance(k.pubkey())
+    
+    print(b)
 
-
+asyncio.run(a())

@@ -16,6 +16,7 @@ from utils.decorators import show_message
 class TradingMenuChoice(Enum):
     TRADING = '1'
     WITHDRAW = '2'
+    BACK = '9'
 
 
 class TradingMenu(BaseMenu):
@@ -32,11 +33,15 @@ class TradingMenu(BaseMenu):
         self.add_choice(
             TradingMenuChoice.WITHDRAW.value, 'Вывод средств', self.withdraw_funds
         )
+        self.add_choice(TradingMenuChoice.BACK.value, 'Назад', self.handle_back)
 
-    def making_trade(self):
-        self.display()
+    async def making_trade(self):
+        await self.display()
         return True
 
-    def withdraw_funds(self):
-        self.display()
+    async def withdraw_funds(self):
+        await self.display()
+        return True
+
+    def handle_back(self):
         return True

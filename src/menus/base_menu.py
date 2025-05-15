@@ -3,8 +3,11 @@ from rich.panel import Panel
 from rich.table import Table
 from rich import box
 from rich.prompt import Prompt
+from rich.columns import Columns
 
 from utils.styles import console
+from database import get_wallets, get_main_wallet, add_wallets_to_db
+from service.wallet_service import create_wallet
 
 
 class BaseMenu:
@@ -25,8 +28,25 @@ class BaseMenu:
             title (str): Заголовок, который будет отображаться в меню.
         """
         self.title = title
+        self.wallet_address = ''
+        self.wallet_secret_key = ''
         self.choices: list[tuple[str, str, Callable]] = []
 
+    async def init_wallet(self):
+        wallets = await get_wallets()
+        
+        if not wallets:
+            wallet = await create_wallet()
+            await add_wallets_to_db(wallet)
+            main_wallet = await get_main_wallet()
+        else:
+            main_wallet = await get_main_wallet()
+            self.wallet_address = main_wallet.address
+            self.wallet_secret_key = main_wallet.private_key
+        
+        self.wallet_address = main_wallet.address
+        self.wallet_secret_key = main_wallet.private_key
+    
     def add_choice(self, num: str, choice: str, handler: Callable):
         """
         Добавляет пункт в меню.
@@ -38,26 +58,35 @@ class BaseMenu:
         """
         self.choices.append((num, choice, handler))
 
-    def display(self):
+    async def display(self):
         """
         Отображает меню в консоли, ожидает ввод пользователя и вызывает соответствующий обработчик.
 
         Выводится панель с заголовком и таблица с пунктами меню. Пользователь может выбрать пункт по номеру.
         Если выбран пункт '0', программа завершает выполнение.
         """
-        console.clear()
-
+        await self.init_wallet()
+        
         console.print(
             Panel.fit(
                 '[bold italic yellow]Solana Volume Bot[/]',
                 subtitle=self.title,
                 subtitle_align='left',
                 border_style='magenta',
-                padding=(1, 2),
-            )
+            ),
+        )
+        
+        console.print(
+            Panel.fit(
+                f'Адрес:[bold italic yellow] {self.wallet_address}[/]\n\nПриватный ключ: [bold italic yellow]{self.wallet_secret_key}[/]',
+                title='Основной кошелек',
+                border_style='magenta',
+                width=80
+            ),
+            justify='center',
         )
 
-        menu_table = Table(show_header=False, box=box.ROUNDED, border_style='magenta')
+        menu_table = Table(show_header=False, box=box.ROUNDED, border_style='magenta', padding=(0, 3))
 
         for num, choice, _ in self.choices:
             menu_table.add_row(f'[bold cyan]{num}.[/]', f'[bold cyan]{choice}[/]')
@@ -76,4 +105,4 @@ class BaseMenu:
                 exit()
 
             if choice == num:
-                return handle()
+                return await handle()

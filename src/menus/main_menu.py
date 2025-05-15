@@ -25,6 +25,7 @@ class MainMenu(BaseMenu):
         self.setup_choices()
 
     def setup_choices(self):
+        console.clear()
         self.add_choice(
             MainMenuChoice.CREATE_WALLET.value,
             'Кошельки',
@@ -32,12 +33,14 @@ class MainMenu(BaseMenu):
         )
         self.add_choice(MainMenuChoice.TRADING.value, 'Накрутка', self.handle_trading)
 
-    def handle_create_wallet(self):
+    async def handle_create_wallet(self):
         wallet_menu = WalletMenu()
-        wallet_menu.display()
+        console.clear()
+        await wallet_menu.display()
         return True
 
-    def handle_trading(self):
+    async def handle_trading(self):
         trading_menu = TradingMenu()
-        trading_menu.display()
+        console.clear()
+        await trading_menu.display()
         return True

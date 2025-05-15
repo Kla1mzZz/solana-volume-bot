@@ -15,6 +15,7 @@ from service.wallet_service import (
     money_distibution,
     get_balance,
     check_token_exists,
+    money_withdrawal
 )
 from database import get_main_wallet, add_wallets_to_db, get_wallets
 
@@ -25,6 +26,7 @@ class WalletMenuChoice(Enum):
     CREATE_MULTIPLE_WALLETS = '1'
     WALLETS_LIST = '2'
     MONEY_TO_WALLETS = '3'
+    MONEY_WITHDRAW = '4'
     BACK = '9'
 
 
@@ -48,7 +50,7 @@ class WalletMenu(BaseMenu):
             'Распределить деньги',
             self.money_to_wallets,
         )
-        self.add_choice('7', 'asdasdasd', self.check)
+        self.add_choice(WalletMenuChoice.MONEY_WITHDRAW.value, 'Вывод средств', self.withdraw_funds)
         self.add_choice(WalletMenuChoice.BACK.value, 'Назад', self.handle_back)
 
     async def handle_create_multiple(self):
@@ -109,6 +111,13 @@ class WalletMenu(BaseMenu):
         await self.display()
         console.clear()
 
+    async def withdraw_funds(self):
+        await money_withdrawal()
+
+        time.sleep(2)
+        await self.display()
+        console.clear()
+    
     async def check(self):
         await check_token_exists()
 

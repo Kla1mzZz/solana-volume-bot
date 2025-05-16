@@ -1,38 +1,45 @@
-from solana.rpc.api import Client
+import base58
+from pumpswap_sdk import PumpSwapSDK
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
-from spl.token.client import Token
-from spl.token.constants import TOKEN_PROGRAM_ID
 
-import base58
+# from database import get_wallets
 
-solana_client = Client("https://api.mainnet-beta.solana.com")
+import asyncio
 
 
-async def buy_token(mint_address, amount, buyer_wallet, private_key) -> None:
-    wallet = Keypair.from_bytes(base58.b58decode(private_key))
-    mint_pubkey = Pubkey(mint_address)
-    token = Token(
-        conn=solana_client,
-        pubkey=mint_pubkey,
-        program_id=TOKEN_PROGRAM_ID,
-        payer=buyer_wallet
-    )
+sdk = PumpSwapSDK()
 
-    buyer_token_account = token.create_associated_token_account(buyer_wallet.public_key)
-
-    print(f"Куплено {amount} токенов {mint_address}")
-
-async def sell_token(mint_address, amount, seller_wallet) -> None:
-    mint_pubkey = Pubkey(mint_address)
-    token = Token(
-        conn=solana_client,
-        pubkey=mint_pubkey,
-        program_id=TOKEN_PROGRAM_ID,
-        payer=seller_wallet
-    )
-
-    seller_token_account = token.get_accounts_by_owner(seller_wallet.public_key).value[0].pubkey
+mint = "7Tx8qTXSakpfaSFjdztPGQ9n2uyT1eUkYz7gYxxopump"
+user_private_key = "4sBPJAhFVG67HDZo2Eju3KrciiK9c3GrLC2393bjHeBX29qAf7M18FqpARdd95DrB2rUCYn4nBzpnLNSVd17APQp"
 
 
-    print(f"Продано {amount} токенов {mint_address}")
+async def get_token_price():
+    token_price = await sdk.get_token_price(mint)
+    print(f"Token Price: {token_price}")    
+
+# async def buy_tokens():
+#     wallets = await get_wallets()
+#     for wallet in wallets:
+#         private_key = Keypair().from_bytes(base58.b58decode(wallet.private_key))
+#         user_private_key = str(private_key)
+#         print(user_private_key)
+#         sol_amount = 0.0001  # Amount of SOL to spend
+#         result = await sdk.buy(mint, sol_amount, user_private_key)
+#         print(result)
+
+
+# async def sell_token():
+#     wallets = await get_wallets()
+#     for wallet in wallets:
+#         private_key = Keypair().from_bytes(base58.b58decode(wallet.private_key))
+#         user_private_key = str(private_key)
+#         print(user_private_key) 
+#         token_amount = 10.0  # Amount of tokens to sell
+#         result = await sdk.sell(mint, token_amount, user_private_key)
+#         print(result)
+
+# # asyncio.run(buy_tokens())
+asyncio.run(get_token_price())
+
+

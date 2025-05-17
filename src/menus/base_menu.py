@@ -9,6 +9,8 @@ from utils.styles import console
 from database import get_wallets, get_main_wallet, add_wallets_to_db
 from service.wallet_service import create_wallet
 
+import inspect
+
 
 class BaseMenu:
     """
@@ -102,9 +104,12 @@ class BaseMenu:
             show_choices=False,
         )
 
+        if choice == '0':
+            exit()
+        
         for num, _, handle in self.choices:
-            if choice == '0':
-                exit()
-
             if choice == num:
-                return await handle()
+                result = handle()
+                if inspect.isawaitable(result):
+                    return await result
+                return result

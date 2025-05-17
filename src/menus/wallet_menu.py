@@ -17,7 +17,7 @@ from service.wallet_service import (
     check_token_exists,
     money_withdrawal
 )
-from database import get_main_wallet, add_wallets_to_db, get_wallets
+from database import get_main_wallet, add_wallets_to_db, get_all_wallets
 
 console = Console()
 
@@ -76,7 +76,7 @@ class WalletMenu(BaseMenu):
 
     @show_message('Загрузка кошельков...')
     async def list_wallets(self):
-        wallets = await get_wallets()
+        wallets = await get_all_wallets()
 
         table = Table(
             Column('id', style='bold cyan'),

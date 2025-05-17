@@ -55,7 +55,7 @@ async def add_wallets_to_db(wallets: list[tuple[str, str]]):
         await session.commit()
 
 
-async def get_wallets():
+async def get_all_wallets():
     async with db_manager.get_session() as session:
         return (await session.execute(select(Wallet))).scalars().all()
 
@@ -65,3 +65,9 @@ async def get_main_wallet():
         wallet_query = select(Wallet).where(Wallet.id == 1)
         main_wallet = (await session.execute(wallet_query)).scalar_one_or_none()
         return main_wallet
+    
+async def get_wallets():
+    async with db_manager.get_session() as session:
+        stmt = select(Wallet).where(Wallet.id >= 2)
+        result = await session.execute(stmt)
+        return result.scalars().all()

@@ -23,7 +23,7 @@ async def create_wallet(count: int = 1) -> list[tuple[str, str]]:
     for i in range(count):
         keypair = Keypair()
         pubkey = keypair.pubkey()
-        secretkey = keypair.to_bytes()
+        secretkey = bytes(keypair)
         wallet = (str(pubkey), base58.b58encode(secretkey).decode())
         wallets.append(wallet)
 

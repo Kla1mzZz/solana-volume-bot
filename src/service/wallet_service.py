@@ -169,21 +169,3 @@ async def money_withdrawal():
         except RPCException as e:
             print('Ошибка при отправке транзакции:', e)
             return None
-
-async def check_token_exists():
-    k = Keypair()
-    mint_address = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
-    program_id = Pubkey(base58.b58decode('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'))
-    token = AsyncToken(
-        client, Pubkey(base58.b58decode(mint_address)), TOKEN_PROGRAM_ID, k
-    )
-
-    n = token.get_mint_info()
-    try:
-        a_token = await AsyncToken.get_mint_info(token)
-        print('✅ Токен найден на Devnet!')
-        print(a_token)
-    except Exception as e:
-        print('❌ Токен не найден или адрес некорректен:', e)
-
-    await client.close()

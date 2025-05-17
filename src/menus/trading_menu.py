@@ -43,5 +43,5 @@ class TradingMenu(BaseMenu):
         await self.display()
         return True
 
-    def handle_back(self):
+    async def handle_back(self):
         return True

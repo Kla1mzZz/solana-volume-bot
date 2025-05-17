@@ -121,5 +121,5 @@ class WalletMenu(BaseMenu):
     async def check(self):
         await check_token_exists()
 
-    def handle_back(self):
+    async def handle_back(self):
         return True

@@ -12,7 +12,7 @@ from menus.wallet_menu import WalletMenu
 from utils.styles import console
 from utils.decorators import show_message
 
-from service.transaction_service import buy_tokens, sell_token, get_token_price
+from service.transaction_service import buy_tokens, sell_tokens, get_token_price
 
 
 class TradingMenuChoice(Enum):
@@ -42,6 +42,9 @@ class TradingMenu(BaseMenu):
         self.add_choice(
             '4', 'Купить токен', self.buy
         )
+        self.add_choice(
+            '5', 'Продать токен', self.sell
+        )
         self.add_choice(TradingMenuChoice.BACK.value, 'Назад', self.handle_back)
 
     async def making_trade(self):
@@ -61,7 +64,12 @@ class TradingMenu(BaseMenu):
         console.clear()
         
     async def buy(self):
-        await buy_tokens(1)
+        await buy_tokens(0.001)
+        await self.display()
+        console.clear()
+        
+    async def sell(self):
+        await sell_tokens(2000)
         await self.display()
         console.clear()
         

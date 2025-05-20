@@ -1,106 +1,146 @@
 import base58
 import asyncio
+import time
 
 from solders.keypair import Keypair
+from solders.pubkey import Pubkey
 from solana.rpc.async_api import AsyncClient
 from solders.transaction import VersionedTransaction
 from solders.system_program import TransferParams, transfer
 from solders.message import MessageV0
+from solana.exceptions import SolanaRpcException
 from solana.rpc.core import RPCException
 
 from database import get_wallets, get_main_wallet
 from utils.styles import console
 
 
-client = AsyncClient('https://api.devnet.solana.com')
+client = AsyncClient('https://api.mainnet-beta.solana.com')
+
+
+class BlockhashCache:
+    def __init__(self, client, ttl=15):
+        self.client = client
+        self.ttl = ttl
+        self.blockhash = None
+        self.timestamp = 0
+
+    async def get_blockhash(self, retries=5, delay=3):
+        now = time.time()
+        if not self.blockhash or now - self.timestamp > self.ttl:
+            for attempt in range(retries):
+                try:
+                    resp = await self.client.get_latest_blockhash()
+                    self.blockhash = resp.value.blockhash
+                    self.timestamp = now
+                    return self.blockhash
+                except SolanaRpcException as e:
+                    if '429' in str(e) or 'Too Many Requests' in str(e):
+                        print(f"Rate limit hit getting blockhash, waiting {delay}s (attempt {attempt+1})")
+                        await asyncio.sleep(delay)
+                    else:
+                        raise
+            raise Exception("Max retries exceeded getting blockhash")
+        return self.blockhash
+
+
+blockhash_cache = BlockhashCache(client)
 
 
 async def create_wallet(count: int = 1) -> list[tuple[str, str]]:
     wallets = []
-    for i in range(count):
+    for _ in range(count):
         keypair = Keypair()
         pubkey = keypair.pubkey()
         secretkey = bytes(keypair)
-        wallet = (str(pubkey), base58.b58encode(secretkey).decode())
-        wallets.append(wallet)
-
+        wallets.append((str(pubkey), base58.b58encode(secretkey).decode()))
     return wallets
 
 
 async def get_balance(wallet_private_key: str):
     private_key = base58.b58decode(wallet_private_key)
-
     keypair = Keypair.from_bytes(private_key)
-
     balance = await client.get_balance(keypair.pubkey())
-
     return balance.value
 
 
-async def money_distibution(amount: float):
+async def send_transfer(from_keypair: Keypair, to_pubkey_str: str, lamports: int):
+    to_pubkey = Pubkey.from_string(to_pubkey_str)
+    # Якщо to_pubkey_str — рядок публічного ключа, беремо як є, якщо приватний — декодуємо.
+
+    transfer_instruction = transfer(
+        TransferParams(
+            from_pubkey=from_keypair.pubkey(),
+            to_pubkey=to_pubkey,
+            lamports=lamports,
+        )
+    )
+
+    latest_blockhash = await blockhash_cache.get_blockhash()
+
+    message = MessageV0.try_compile(
+        payer=from_keypair.pubkey(),
+        instructions=[transfer_instruction],
+        address_lookup_table_accounts=[],
+        recent_blockhash=latest_blockhash,
+    )
+
+    fee_response = await client.get_fee_for_message(message)
+    transaction_fee = fee_response.value
+    if transaction_fee is None:
+        print('Не удалось получить комиссию!')
+        return None
+
+    amount_after_fee = lamports - transaction_fee
+    if amount_after_fee <= 0:
+        print('Недостаточно средств для отправки с учетом комиссии!')
+        return None
+
+    # Пересобираємо транзакцію з урахуванням комісії
+    transfer_instruction = transfer(
+        TransferParams(
+            from_pubkey=from_keypair.pubkey(),
+            to_pubkey=to_pubkey,
+            lamports=amount_after_fee,
+        )
+    )
+    message = MessageV0.try_compile(
+        payer=from_keypair.pubkey(),
+        instructions=[transfer_instruction],
+        address_lookup_table_accounts=[],
+        recent_blockhash=latest_blockhash,
+    )
+    transaction = VersionedTransaction(message, [from_keypair])
+
+    # Відправка з повтором при 429
+    for attempt in range(5):
+        try:
+            response = await client.send_transaction(transaction)
+            console.print(f'[bold green]Транзакция отправлена Hash: {response.value}[/]')
+            return response.value
+        except RPCException as e:
+            if '429' in str(e) or 'Too Many Requests' in str(e):
+                wait_sec = 3 * (attempt + 1)
+                print(f"Rate limited sending transaction, ждем {wait_sec} секунд... (попытка {attempt + 1})")
+                await asyncio.sleep(wait_sec)
+            else:
+                print('Ошибка при отправке транзакции:', e)
+                return None
+    print("Не удалось отправить транзакцию после нескольких попыток.")
+    return None
+
+
+async def money_distribution(amount: float):
     get_m_w = await get_main_wallet()
     main_wallet = Keypair.from_bytes(base58.b58decode(get_m_w.private_key))
     wallets = await get_wallets()
     money_on_one_wallet = amount / len(wallets)
 
     for wallet in wallets:
-        await asyncio.sleep(0.3)
-        wallet = Keypair().from_bytes(base58.b58decode(wallet.private_key))
-        transfer_instruction = transfer(
-            TransferParams(
-                from_pubkey=main_wallet.pubkey(),
-                to_pubkey=wallet.pubkey(),
-                lamports=int(money_on_one_wallet * 1_000_000_000),
-            )
-        )
-
-        latest_blockhash = (await client.get_latest_blockhash()).value.blockhash
-
-        message = MessageV0.try_compile(
-            payer=main_wallet.pubkey(),
-            instructions=[transfer_instruction],
-            address_lookup_table_accounts=[],
-            recent_blockhash=latest_blockhash,
-        )
-
-        fee_response = await client.get_fee_for_message(message)
-        transaction_fee = fee_response.value
-
-        if transaction_fee is None:
-            print('Не удалось получить комиссию!')
-            return None
-
-        amount_in_lamports = int(money_on_one_wallet * 1_000_000_000) - transaction_fee
-        if amount_in_lamports <= 0:
-            print('Недостаточно средств для отправки с учетом комиссии!')
-            return None
-
-        transfer_instruction = transfer(
-            TransferParams(
-                from_pubkey=main_wallet.pubkey(),
-                to_pubkey=wallet.pubkey(),
-                lamports=amount_in_lamports,
-            )
-        )
-
-        message = MessageV0.try_compile(
-            payer=main_wallet.pubkey(),
-            instructions=[transfer_instruction],
-            address_lookup_table_accounts=[],
-            recent_blockhash=latest_blockhash,
-        )
-
-        transaction = VersionedTransaction(message, [main_wallet])
-
-        try:
-            response = await client.send_transaction(transaction)
-            console.print(
-                f'[bold green]Транзакция отправлена Hash: {response.value}[/]'
-            )
-
-        except RPCException as e:
-            print('Ошибка при отправке транзакции:', e)
-            return None
+        await asyncio.sleep(0.5)  # затримка між транзакціями
+        wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
+        lamports = int(money_on_one_wallet * 1_000_000_000)
+        await send_transfer(main_wallet, str(wallet_keypair.pubkey()), lamports)
 
 
 async def money_withdrawal():
@@ -109,59 +149,14 @@ async def money_withdrawal():
     wallets = await get_wallets()
 
     for wallet in wallets:
-        money_on_one_wallet = await get_balance(wallet.private_key)
-        wallet = Keypair().from_bytes(base58.b58decode(wallet.private_key))
+        wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
+        balance = await get_balance(wallet.private_key)
+        if balance == 0:
+            print(f"Гаманець {wallet_keypair.pubkey()} пустий, пропускаємо")
+            continue
+        await asyncio.sleep(0.5)  # затримка між транзакціями
+        await send_transfer(wallet_keypair, str(main_wallet.pubkey()), balance)
 
-        transfer_instruction = transfer(
-            TransferParams(
-                from_pubkey=wallet.pubkey(),
-                to_pubkey=main_wallet.pubkey(),
-                lamports=money_on_one_wallet,
-            )
-        )
 
-        latest_blockhash = (await client.get_latest_blockhash()).value.blockhash
+# Не забудь у main або там, де викликаєш async-функції, обробляти можливі помилки.
 
-        message = MessageV0.try_compile(
-            payer=wallet.pubkey(),
-            instructions=[transfer_instruction],
-            address_lookup_table_accounts=[],
-            recent_blockhash=latest_blockhash,
-        )
-
-        fee_response = await client.get_fee_for_message(message)
-        transaction_fee = fee_response.value
-
-        if transaction_fee is None:
-            print('Не удалось получить комиссию!')
-            return None
-
-        amount_in_lamports = money_on_one_wallet - transaction_fee
-        if amount_in_lamports <= 0:
-            print('Недостаточно средств для отправки с учетом комиссии!')
-            return None
-
-        transfer_instruction = transfer(
-            TransferParams(
-                from_pubkey=wallet.pubkey(),
-                to_pubkey=main_wallet.pubkey(),
-                lamports=amount_in_lamports,
-            )
-        )
-
-        message = MessageV0.try_compile(
-            payer=wallet.pubkey(),
-            instructions=[transfer_instruction],
-            address_lookup_table_accounts=[],
-            recent_blockhash=latest_blockhash,
-        )
-
-        transaction = VersionedTransaction(message, [wallet])
-
-        try:
-            response = await client.send_transaction(transaction)
-            console.print(f'[bold green]Деньги получены Hash: {response.value}[/]')
-
-        except RPCException as e:
-            print('Ошибка при отправке транзакции:', e)
-            return None

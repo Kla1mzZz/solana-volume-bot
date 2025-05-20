@@ -12,7 +12,7 @@ from utils.decorators import show_message
 
 from service.wallet_service import (
     create_wallet,
-    money_distibution,
+    money_distribution,
     get_balance,
     money_withdrawal,
 )
@@ -106,7 +106,7 @@ class WalletMenu(BaseMenu):
             show_choices=False,
         )
 
-        await money_distibution(float(choice))
+        await money_distribution(float(choice))
 
         time.sleep(2)
         await self.display()

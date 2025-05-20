@@ -14,8 +14,7 @@ from service.wallet_service import (
     create_wallet,
     money_distibution,
     get_balance,
-    check_token_exists,
-    money_withdrawal
+    money_withdrawal,
 )
 from database import get_main_wallet, add_wallets_to_db, get_all_wallets
 
@@ -50,7 +49,9 @@ class WalletMenu(BaseMenu):
             'Распределить деньги',
             self.money_to_wallets,
         )
-        self.add_choice(WalletMenuChoice.MONEY_WITHDRAW.value, 'Вывод средств', self.withdraw_funds)
+        self.add_choice(
+            WalletMenuChoice.MONEY_WITHDRAW.value, 'Вывод средств', self.withdraw_funds
+        )
         self.add_choice(WalletMenuChoice.BACK.value, 'Назад', self.handle_back)
 
     async def handle_create_multiple(self):
@@ -74,7 +75,7 @@ class WalletMenu(BaseMenu):
         main_wallet = await get_main_wallet()
         console.print(f'Основной кошелек: [green]{main_wallet.address}[/]')
 
-    @show_message('Загрузка кошельков...')
+    @show_message('Загрузка кошельков')
     async def list_wallets(self):
         wallets = await get_all_wallets()
 
@@ -117,9 +118,6 @@ class WalletMenu(BaseMenu):
         time.sleep(2)
         await self.display()
         console.clear()
-    
-    async def check(self):
-        await check_token_exists()
 
     async def handle_back(self):
         return True

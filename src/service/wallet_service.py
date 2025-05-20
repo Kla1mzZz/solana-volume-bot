@@ -2,14 +2,11 @@ import base58
 import asyncio
 
 from solders.keypair import Keypair
-from solders.pubkey import Pubkey
 from solana.rpc.async_api import AsyncClient
 from solders.transaction import VersionedTransaction
 from solders.system_program import TransferParams, transfer
 from solders.message import MessageV0
 from solana.rpc.core import RPCException
-from spl.token.async_client import AsyncToken
-from spl.token.constants import TOKEN_PROGRAM_ID
 
 from database import get_wallets, get_main_wallet
 from utils.styles import console
@@ -47,6 +44,7 @@ async def money_distibution(amount: float):
     money_on_one_wallet = amount / len(wallets)
 
     for wallet in wallets:
+        await asyncio.sleep(0.3)
         wallet = Keypair().from_bytes(base58.b58decode(wallet.private_key))
         transfer_instruction = transfer(
             TransferParams(
@@ -104,16 +102,16 @@ async def money_distibution(amount: float):
             print('Ошибка при отправке транзакции:', e)
             return None
 
+
 async def money_withdrawal():
     get_m_w = await get_main_wallet()
     main_wallet = Keypair.from_bytes(base58.b58decode(get_m_w.private_key))
     wallets = await get_wallets()
-    
 
     for wallet in wallets:
         money_on_one_wallet = await get_balance(wallet.private_key)
         wallet = Keypair().from_bytes(base58.b58decode(wallet.private_key))
-        
+
         transfer_instruction = transfer(
             TransferParams(
                 from_pubkey=wallet.pubkey(),
@@ -162,9 +160,7 @@ async def money_withdrawal():
 
         try:
             response = await client.send_transaction(transaction)
-            console.print(
-                f'[bold green]Деньги получены Hash: {response.value}[/]'
-            )
+            console.print(f'[bold green]Деньги получены Hash: {response.value}[/]')
 
         except RPCException as e:
             print('Ошибка при отправке транзакции:', e)

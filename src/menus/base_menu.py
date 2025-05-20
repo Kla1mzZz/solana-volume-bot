@@ -106,7 +106,7 @@ class BaseMenu:
 
         if choice == '0':
             exit()
-        
+
         for num, _, handle in self.choices:
             if choice == num:
                 result = handle()

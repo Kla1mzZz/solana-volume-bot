@@ -1,11 +1,14 @@
 import time
 from enum import Enum
+import base58
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table, Column
 from rich import box
 from rich.prompt import Prompt
+
+from solders.pubkey import Pubkey
 
 from menus.base_menu import BaseMenu
 from utils.decorators import show_message
@@ -15,8 +18,10 @@ from service.wallet_service import (
     money_distribution,
     get_balance,
     money_withdrawal,
+    get_token_balance,
 )
 from database import get_main_wallet, add_wallets_to_db, get_all_wallets
+from config import settings
 
 console = Console()
 
@@ -83,16 +88,22 @@ class WalletMenu(BaseMenu):
             Column('id', style='bold cyan'),
             Column('Адрес', style='bold yellow', overflow='fold'),
             Column('Приватный ключ', style='bold yellow', overflow='fold'),
-            Column('Баланс', style='bold yellow', overflow='fold'),
+            Column('Баланс SOL', style='bold yellow', overflow='fold'),
+            Column('Баланс MINT', style='bold yellow', overflow='fold'),
             box=box.ROUNDED,
             title='Список кошельков',
             title_style='bold yellow',
             border_style='magenta',
         )
         for wallet in wallets:
-            balance = await get_balance(wallet.private_key)
+            mint = Pubkey.from_string(settings.mint)
+            wall = Pubkey.from_string(wallet.address)
+            sol_balance = await get_balance(wallet.private_key) / 1_000_000_000
+            mint_balance = await get_token_balance(wall, mint)
+            
             table.add_row(
-                str(wallet.id), wallet.address, wallet.private_key, str(balance)
+                str(wallet.id), wallet.address, f'{wallet.private_key}\n', 
+                str(sol_balance), str(mint_balance)
             )
 
         console.print(table)
@@ -105,7 +116,10 @@ class WalletMenu(BaseMenu):
             '[bold yellow]Введите сумму в SOL[/]',
             show_choices=False,
         )
-
+        if float(choice) < 0.0015:
+            console.print('[bold red]Сумма должна быть больше 0.0015[/]')
+            await self.display()
+            return
         await money_distribution(float(choice))
 
         time.sleep(2)

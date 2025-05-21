@@ -9,13 +9,19 @@ from solders.transaction import VersionedTransaction
 from solders.system_program import TransferParams, transfer
 from solders.message import MessageV0
 from solana.exceptions import SolanaRpcException
+from solana.transaction import Transaction
 from solana.rpc.core import RPCException
+from spl.token.instructions import get_associated_token_address, close_account
+from spl.token.instructions import CloseAccountParams
+from spl.token.constants import TOKEN_PROGRAM_ID
 
 from database import get_wallets, get_main_wallet
+from service.transaction_service import sell_token
 from utils.styles import console
+from config import settings
 
 
-client = AsyncClient('https://api.mainnet-beta.solana.com')
+client = AsyncClient('https://solana-rpc.publicnode.com')
 
 
 class BlockhashCache:
@@ -36,11 +42,13 @@ class BlockhashCache:
                     return self.blockhash
                 except SolanaRpcException as e:
                     if '429' in str(e) or 'Too Many Requests' in str(e):
-                        print(f"Rate limit hit getting blockhash, waiting {delay}s (attempt {attempt+1})")
+                        print(
+                            f'Rate limit hit getting blockhash, waiting {delay}s (attempt {attempt + 1})'
+                        )
                         await asyncio.sleep(delay)
                     else:
                         raise
-            raise Exception("Max retries exceeded getting blockhash")
+            raise Exception('Max retries exceeded getting blockhash')
         return self.blockhash
 
 
@@ -116,17 +124,21 @@ async def send_transfer(from_keypair: Keypair, to_pubkey_str: str, lamports: int
     for attempt in range(5):
         try:
             response = await client.send_transaction(transaction)
-            console.print(f'[bold green]Транзакция отправлена Hash: {response.value}[/]')
+            console.print(
+                f'[bold green]Транзакция отправлена Hash: {response.value}[/]'
+            )
             return response.value
         except RPCException as e:
             if '429' in str(e) or 'Too Many Requests' in str(e):
                 wait_sec = 3 * (attempt + 1)
-                print(f"Rate limited sending transaction, ждем {wait_sec} секунд... (попытка {attempt + 1})")
+                print(
+                    f'Rate limited sending transaction, ждем {wait_sec} секунд... (попытка {attempt + 1})'
+                )
                 await asyncio.sleep(wait_sec)
             else:
                 print('Ошибка при отправке транзакции:', e)
                 return None
-    print("Не удалось отправить транзакцию после нескольких попыток.")
+    print('Не удалось отправить транзакцию после нескольких попыток.')
     return None
 
 
@@ -137,7 +149,7 @@ async def money_distribution(amount: float):
     money_on_one_wallet = amount / len(wallets)
 
     for wallet in wallets:
-        await asyncio.sleep(0.5)  # затримка між транзакціями
+        await asyncio.sleep(0.5)
         wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
         lamports = int(money_on_one_wallet * 1_000_000_000)
         await send_transfer(main_wallet, str(wallet_keypair.pubkey()), lamports)
@@ -147,16 +159,37 @@ async def money_withdrawal():
     get_m_w = await get_main_wallet()
     main_wallet = Keypair.from_bytes(base58.b58decode(get_m_w.private_key))
     wallets = await get_wallets()
+    
+    for wallet in wallets:
+        wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
+        mint_balance = await get_token_balance(wallet_keypair.pubkey(), Pubkey.from_string(settings.mint))
+        if mint_balance == 0:
+            print(f'Кошелек {wallet_keypair.pubkey()} нету mint, пропускаем.')
+            continue
+        await asyncio.sleep(0.5)
+        await sell_token(mint_balance, wallet.private_key)
 
     for wallet in wallets:
         wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
         balance = await get_balance(wallet.private_key)
-        if balance == 0:
-            print(f"Гаманець {wallet_keypair.pubkey()} пустий, пропускаємо")
+        mint_balance = await get_token_balance(wallet_keypair.pubkey(), Pubkey.from_string(settings.mint))
+        if balance == 0 and mint_balance == 0:
+            print(f'Кошелек {wallet_keypair.pubkey()} пустой, пропускаем.')
             continue
-        await asyncio.sleep(0.5)  # затримка між транзакціями
+        await asyncio.sleep(0.5)
         await send_transfer(wallet_keypair, str(main_wallet.pubkey()), balance)
 
 
-# Не забудь у main або там, де викликаєш async-функції, обробляти можливі помилки.
+async def get_token_balance(wallet_pubkey: Pubkey, mint_pubkey: Pubkey):
+    try:
+        ata = get_associated_token_address(wallet_pubkey, mint_pubkey)
 
+        resp = await client.get_token_account_balance(ata)
+        
+        if resp.value.ui_amount is None:
+            return 0
+
+        amount = resp.value.ui_amount
+        return amount
+    except Exception as e:
+        return 0

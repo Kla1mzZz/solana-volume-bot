@@ -64,12 +64,12 @@ class TradingMenu(BaseMenu):
         console.clear()
         
     async def buy(self):
-        await buy_tokens(0.001)
+        await buy_tokens(0.00001)
         await self.display()
         console.clear()
         
     async def sell(self):
-        await sell_tokens(2000)
+        await sell_tokens(100)
         await self.display()
         console.clear()
         

@@ -8,7 +8,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     database_url: str = 'sqlite+aiosqlite:///database.db'
-    https_rpc_endpoint: str= 'https://api.mainnet-beta.solana.com/'
+    https_rpc_endpoint: str= 'https://solana-rpc.publicnode.com'
     BUY_SLIPPAGE: float = 0.3
     SELL_SLIPPAGE: float = 0.1
     SWAP_PRIORITY_FEE: int = 1500000

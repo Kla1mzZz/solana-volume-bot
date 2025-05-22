@@ -5,9 +5,7 @@ import keyboard
 from solders.pubkey import Pubkey
 
 from menus.base_menu import BaseMenu
-from menus.wallet_menu import WalletMenu
 from utils.styles import console
-from utils.decorators import show_message
 
 from database import get_all_wallets
 from service.transaction_service import buy_token, sell_token, get_token_price
@@ -44,22 +42,24 @@ class TradingMenu(BaseMenu):
         self.add_choice(TradingMenuChoice.BACK.value, 'Назад', self.handle_back)
 
     async def making_trade(self):
-
         console.print('Нажми "q" чтобы остановить')
 
         while True:
             wallets = await get_all_wallets()
-            
+
             for wallet in wallets[1:]:
                 buy_or_sell = random.choice(['buy', 'sell'])
                 sol_balance = await get_balance(wallet.private_key) / 1_000_000_000
-                mint_balance = await get_token_balance(Pubkey.from_string(wallet.address), Pubkey.from_string(settings.mint))
-                
+                mint_balance = await get_token_balance(
+                    Pubkey.from_string(wallet.address),
+                    Pubkey.from_string(settings.mint),
+                )
+
                 if buy_or_sell == 'buy':
                     if sol_balance < 0.0015:
                         console.print(f'[bold red]SOL закончились[/]')
                         continue
-                    
+
                     amount_sol = round(random.uniform(0.002, sol_balance), 9)
 
                     buy_t = await buy_token(amount_sol, wallet.private_key)
@@ -71,17 +71,17 @@ class TradingMenu(BaseMenu):
                     if mint_balance < 0.0015:
                         amount_sol = round(random.uniform(0.002, sol_balance), 9)
                         buy_t = await buy_token(amount_sol, wallet.private_key)
-                        
+
                         if not buy_t:
                             console.print(f'[bold red]На балансе мало SOL[/]')
                             continue
                         console.print(f'[bold green]Куплено: на {amount_sol} SOL[/]')
                         continue
-                    
+
                     amount_mint = round(random.uniform(100, mint_balance), 9)
                     await sell_token(amount_mint, wallet.private_key)
                     console.print(f'[bold green]Продано: {amount_mint} токенов[/]')
-                
+
             if keyboard.is_pressed('q'):
                 console.print('Выход по нажатию "q"')
                 break
@@ -99,4 +99,6 @@ class TradingMenu(BaseMenu):
         console.clear()
 
     async def handle_back(self):
+        console.clear()
+        console.clear()
         return True

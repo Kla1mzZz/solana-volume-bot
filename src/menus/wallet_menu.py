@@ -100,10 +100,13 @@ class WalletMenu(BaseMenu):
             wall = Pubkey.from_string(wallet.address)
             sol_balance = await get_balance(wallet.private_key) / 1_000_000_000
             mint_balance = await get_token_balance(wall, mint)
-            
+
             table.add_row(
-                str(wallet.id), wallet.address, f'{wallet.private_key}\n', 
-                str(sol_balance), str(mint_balance)
+                str(wallet.id),
+                wallet.address,
+                f'{wallet.private_key}\n',
+                str(sol_balance),
+                str(mint_balance),
             )
 
         console.print(table)
@@ -134,4 +137,6 @@ class WalletMenu(BaseMenu):
         console.clear()
 
     async def handle_back(self):
+        console.clear()
+        console.clear()
         return True

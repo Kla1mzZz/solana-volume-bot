@@ -1,18 +1,9 @@
 from enum import Enum
-import time
-
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich import box
-from rich.prompt import Prompt
 
 from menus.base_menu import BaseMenu
 from menus.wallet_menu import WalletMenu
 from menus.trading_menu import TradingMenu
 from utils.styles import console
-from utils.decorators import show_message
-
 
 class MainMenuChoice(Enum):
     CREATE_WALLET = '1'

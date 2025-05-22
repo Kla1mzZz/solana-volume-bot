@@ -1,8 +1,10 @@
 import asyncio
 from menus.main_menu import MainMenu
+from database import db_manager
 
 
 async def main():
+    await db_manager.init_db()
     while True:
         menu = MainMenu()
 
@@ -13,4 +15,11 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        import traceback
+
+        print('❌ Произошла ошибка:')
+        traceback.print_exc()
+        input('\nНажмите Enter, чтобы закрыть...')

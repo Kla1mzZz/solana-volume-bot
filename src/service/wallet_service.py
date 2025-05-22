@@ -9,11 +9,8 @@ from solders.transaction import VersionedTransaction
 from solders.system_program import TransferParams, transfer
 from solders.message import MessageV0
 from solana.exceptions import SolanaRpcException
-from solana.transaction import Transaction
 from solana.rpc.core import RPCException
-from spl.token.instructions import get_associated_token_address, close_account
-from spl.token.instructions import CloseAccountParams
-from spl.token.constants import TOKEN_PROGRAM_ID
+from spl.token.instructions import get_associated_token_address
 
 from database import get_wallets, get_main_wallet
 from service.transaction_service import sell_token
@@ -159,10 +156,12 @@ async def money_withdrawal():
     get_m_w = await get_main_wallet()
     main_wallet = Keypair.from_bytes(base58.b58decode(get_m_w.private_key))
     wallets = await get_wallets()
-    
+
     for wallet in wallets:
         wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
-        mint_balance = await get_token_balance(wallet_keypair.pubkey(), Pubkey.from_string(settings.mint))
+        mint_balance = await get_token_balance(
+            wallet_keypair.pubkey(), Pubkey.from_string(settings.mint)
+        )
         if mint_balance == 0:
             print(f'Кошелек {wallet_keypair.pubkey()} нету mint, пропускаем.')
             continue
@@ -172,7 +171,9 @@ async def money_withdrawal():
     for wallet in wallets:
         wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
         balance = await get_balance(wallet.private_key)
-        mint_balance = await get_token_balance(wallet_keypair.pubkey(), Pubkey.from_string(settings.mint))
+        mint_balance = await get_token_balance(
+            wallet_keypair.pubkey(), Pubkey.from_string(settings.mint)
+        )
         if balance == 0 and mint_balance == 0:
             print(f'Кошелек {wallet_keypair.pubkey()} пустой, пропускаем.')
             continue
@@ -185,7 +186,7 @@ async def get_token_balance(wallet_pubkey: Pubkey, mint_pubkey: Pubkey):
         ata = get_associated_token_address(wallet_pubkey, mint_pubkey)
 
         resp = await client.get_token_account_balance(ata)
-        
+
         if resp.value.ui_amount is None:
             return 0
 

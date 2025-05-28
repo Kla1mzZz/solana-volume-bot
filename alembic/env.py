@@ -9,6 +9,7 @@ from alembic import context
 
 from src.models.base import Base
 from src.models.wallet import Wallet
+from src.models.token import Token
 from src.config import settings
 
 # this is the Alembic Config object, which provides

@@ -4,6 +4,8 @@ from pumpswap_sdk import PumpSwapSDK
 from utils.styles import console
 from config import settings
 
+from database import get_token_address
+
 
 sdk = PumpSwapSDK()
 
@@ -26,7 +28,7 @@ async def with_retries(fn, *args, retries=3, delay=2, **kwargs):
 
 
 async def get_token_price():
-    token_price = await with_retries(sdk.get_token_price, settings.mint)
+    token_price = await with_retries(sdk.get_token_price, await get_token_address())
     console.print(f'[bold green]Token Price:[/] [bold yellow]{token_price}[/]')
 
 

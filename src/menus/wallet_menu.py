@@ -1,9 +1,7 @@
 import time
 from enum import Enum
-import base58
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table, Column
 from rich import box
 from rich.prompt import Prompt

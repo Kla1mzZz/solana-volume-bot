@@ -1,11 +1,16 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from turtle import reset
 
-from sqlalchemy import select
+from base58 import b58decode
+from base64 import b64decode
+from solders.pubkey import Pubkey
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from models.wallet import Wallet
 from models.base import Base
+from models.token import Token
 from config import settings
 
 
@@ -72,3 +77,35 @@ async def get_wallets():
         stmt = select(Wallet).where(Wallet.id >= 2)
         result = await session.execute(stmt)
         return result.scalars().all()
+    
+    
+async def add_token_to_db(token_address: str):
+    async with db_manager.get_session() as session:
+        adress_query = select(func.count('*')).where(Token.id == 1)
+        adress_matched_count: int = (await session.execute(adress_query)).scalar()
+        
+        try:
+            if adress_matched_count == 0:
+                session.add(Token(address=token_address))
+                await session.commit()
+                return f"Токен {token_address} успешно добавлен в базу данных."
+            else:
+                stmt = select(Token).where(Token.id == 1)
+                result = await session.execute(stmt)
+                token = result.scalar_one_or_none()
+                token.address = token_address
+                await session.commit()
+                return f"Токен {token_address} успешно перезаписан."
+        except ValueError:
+            return 'Неверный адрес токена. Убедитесь, что он в формате base58 и имеет длину 32 байта.'
+        
+async def get_token_address():
+    async with db_manager.get_session() as session:
+        stmt = select(Token).where(Token.id == 1)
+        result = await session.execute(stmt)
+        token = result.scalar_one_or_none()
+        if token:
+            return token.address
+        else:
+            return 'Вы не добавили токен в базу данных.'
+        

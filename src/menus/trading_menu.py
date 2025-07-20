@@ -13,7 +13,6 @@ from utils.styles import console
 from database import get_all_wallets, add_token_to_db, get_token_address
 from service.transaction_service import buy_token, sell_token, get_token_price
 from service.wallet_service import get_balance, get_token_balance
-from config import settings
 
 
 class TradingMenuChoice(Enum):
@@ -81,7 +80,7 @@ class TradingMenu(BaseMenu):
                     sol_balance = await get_balance(wallet.private_key) / 1_000_000_000
                     mint_balance = await get_token_balance(
                         Pubkey.from_string(wallet.address),
-                        Pubkey.from_string(settings.mint),
+                        Pubkey.from_string(await get_token_address()),
                     )
 
                     if buy_or_sell == 'buy':

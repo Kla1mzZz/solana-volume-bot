@@ -18,8 +18,7 @@ from service.wallet_service import (
     money_withdrawal,
     get_token_balance,
 )
-from database import get_main_wallet, add_wallets_to_db, get_all_wallets
-from config import settings
+from database import get_main_wallet, add_wallets_to_db, get_all_wallets, get_token_address
 
 console = Console()
 
@@ -94,7 +93,7 @@ class WalletMenu(BaseMenu):
             border_style='magenta',
         )
         for wallet in wallets:
-            mint = Pubkey.from_string(settings.mint)
+            mint = Pubkey.from_string(await get_token_address())
             wall = Pubkey.from_string(wallet.address)
             sol_balance = await get_balance(wallet.private_key) / 1_000_000_000
             mint_balance = await get_token_balance(wall, mint)

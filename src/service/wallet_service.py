@@ -12,10 +12,9 @@ from solana.exceptions import SolanaRpcException
 from solana.rpc.core import RPCException
 from spl.token.instructions import get_associated_token_address
 
-from database import get_wallets, get_main_wallet
+from database import get_wallets, get_main_wallet, get_token_address
 from service.transaction_service import sell_token
 from utils.styles import console
-from config import settings
 
 
 client = AsyncClient('https://solana-rpc.publicnode.com')
@@ -160,7 +159,7 @@ async def money_withdrawal():
     for wallet in wallets:
         wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
         mint_balance = await get_token_balance(
-            wallet_keypair.pubkey(), Pubkey.from_string(settings.mint)
+            wallet_keypair.pubkey(), Pubkey.from_string(await get_token_address())
         )
         if mint_balance == 0:
             print(f'Кошелек {wallet_keypair.pubkey()} нету mint, пропускаем.')
@@ -172,7 +171,7 @@ async def money_withdrawal():
         wallet_keypair = Keypair.from_bytes(base58.b58decode(wallet.private_key))
         balance = await get_balance(wallet.private_key)
         mint_balance = await get_token_balance(
-            wallet_keypair.pubkey(), Pubkey.from_string(settings.mint)
+            wallet_keypair.pubkey(), Pubkey.from_string(await get_token_address())
         )
         if balance == 0 and mint_balance == 0:
             print(f'Кошелек {wallet_keypair.pubkey()} пустой, пропускаем.')

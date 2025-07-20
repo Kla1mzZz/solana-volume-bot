@@ -2,7 +2,6 @@ import asyncio
 from pumpswap_sdk import PumpSwapSDK
 
 from utils.styles import console
-from config import settings
 
 from database import get_token_address
 
@@ -33,7 +32,7 @@ async def get_token_price():
 
 
 async def buy_token(sol_amount: float, wallet_private_key: str):
-    result = await with_retries(sdk.buy, settings.mint, sol_amount, wallet_private_key)
+    result = await with_retries(sdk.buy, await get_token_address(), sol_amount, wallet_private_key)
     if result.get('status', False):
         console.print(
             f'[bold green] Покупка: {result["message"]}, Hash: {result["data"]["tx_id"]}[/]'
@@ -45,7 +44,7 @@ async def buy_token(sol_amount: float, wallet_private_key: str):
 
 
 async def sell_token(amount: float, wallet_private_key: str):
-    result = await with_retries(sdk.sell, settings.mint, amount, wallet_private_key)
+    result = await with_retries(sdk.sell, await get_token_address(), amount, wallet_private_key)
     if result.get('status', False):
         console.print(
             f'[bold green] Продажа: {result["message"]}, Hash: {result["data"]["tx_id"]}[/]'
